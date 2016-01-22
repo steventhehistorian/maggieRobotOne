@@ -1,0 +1,86 @@
+// "Maggie 2" robot code v1 beta.  Steven Reddick.  
+
+// This is my open-source code gift to the world, if you're desperate enough to use it.
+
+// Description: 
+// After boot up, the code runs in an infinite loop and uses pulse width modulation to adjust
+// the output behavior of a DC motor and a servo based on the input from an ultrasonic sensor. 
+
+#include <Servo.h>  //Load the servo Library
+
+// Instantiates the Servo
+int pos = 0;    // variable to store the servo position
+int servoPin= 3; //Servo is hooked to pin 9
+int servoDelay=25; // 25 millisecond delay after each servo write
+Servo myPointer;  //Create your servo object.
+
+// Instantiates the Motor
+int motorPin = 6; // sets up motor
+
+// Instantiates the Ultrasonic sensor
+unsigned long echo = 0;
+int ultraSoundSignal = 9; // Ultrasound signal pin
+int ultraSoundReceive = 10; //Ultrasound receive pin - Steven 
+unsigned long ultrasoundValue = 0;
+
+
+
+void setup() {
+Serial.begin(9600);
+myPointer.attach(servoPin);  // attaches the servo myPointer to pin servoPin
+pinMode(motorPin, OUTPUT);
+pinMode(ultraSoundSignal,OUTPUT);
+pinMode(ultraSoundReceive, INPUT); // initiate input receive pin
+ 
+}
+
+unsigned long ping() // ping/receive function for ultrasonic sensor.  Snagged from Google search.
+{ 
+  pinMode(ultraSoundSignal, OUTPUT); // Switch signalpin to output
+  digitalWrite(ultraSoundSignal, LOW); // Send low pulse 
+  delayMicroseconds(2); // Wait for 2 microseconds
+  digitalWrite(ultraSoundSignal, HIGH); // Send high pulse
+  delayMicroseconds(5); // Wait for 5 microseconds
+  digitalWrite(ultraSoundSignal, LOW); // Holdoff
+  pinMode(ultraSoundReceive, INPUT); // Switch signalpin to input
+  digitalWrite(ultraSoundReceive, HIGH); // Turn on pullup resistor
+  echo = pulseIn(ultraSoundReceive, HIGH); //Listen for echo
+  ultrasoundValue = (echo / 58.138) * .39; //convert to CM then to inches
+  return ultrasoundValue;
+}
+
+
+void loop() {
+
+  // Robot senses distance from front mounted sensor and varies speed based on proximity to an object.  If robot approaches object closely, 
+  // it stops, turns servo (wheels) and attempts to move around object.
+
+  int x = 0;
+  
+  x = ping();
+  
+    if(x==0) { 
+      Serial.println("Stopping and backing up");
+      analogWrite(motorPin, 0);
+       myPointer.write(90);
+      delay(1000); //delay 1 second.
+      analogWrite(motorPin, 150);
+      delay(2000);
+      analogWrite(motorPin, 0);
+      delay(500);
+      myPointer.write(150);
+      delay(500);
+      
+      } else if (x>10) {
+        Serial.println(x);
+        myPointer.write(150);
+        analogWrite(motorPin, 200);
+  
+        } else {
+          Serial.println(x);
+          myPointer.write(150);
+          analogWrite(motorPin, 180-(10*(10-x)));
+          //delay(10);
+      }
+
+}
